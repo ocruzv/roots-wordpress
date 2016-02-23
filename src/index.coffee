@@ -19,22 +19,41 @@ module.exports = (opts = {}) ->
 
       all = for type, config of opts.post_types
         request(opts.site, type, config)
-          .then(render_single_views.bind(@, config, type))
+          .then(get_posts_and_routes.bind(@, type))
           .then(add_urls_to_posts)
           .then(add_posts_to_locals.bind(@, type))
+          .then(render_single_views.bind(@, config, type))
 
       W.all(all)
 
 # private
 
 request = (site, type, config) ->
+  pathName = "#{site}/posts"
+  if type == "categories"
+    pathName = "#{site}/categories"
   params = _.merge(config, type: type)
-  API(path: "#{site}/posts", params: params)
+  API(path: pathName, params: params)
 
-render_single_views = (config, type, res) ->
-  posts = res.entity.posts
+get_posts_and_routes = (type, res) ->
+  if type == "categories"
+    posts = res.entity.categories
+    return {
+      urls: [],
+      posts: posts
+    }
+  else
+    posts = res.entity.posts
 
-  if not config.template then return { urls: [], posts: posts }
+  W.map posts, (p) =>
+    output = "/#{type}/#{p.slug}.html"
+
+    return output
+  .then (urls) -> { urls: urls, posts: posts }
+
+render_single_views = (config, type, posts) ->
+
+  if not config.template then return posts
 
   W.map posts, (p) =>
     tpl = path.join(@roots.root, config.template)
@@ -47,7 +66,7 @@ render_single_views = (config, type, res) ->
       .then((res) => @util.write(output, res.result))
       .yield(output)
 
-  .then (urls) -> { urls: urls, posts: posts }
+  .then (urls) -> posts
 
 add_urls_to_posts = (obj) ->
   obj.posts.map (post, i) ->
@@ -55,4 +74,18 @@ add_urls_to_posts = (obj) ->
     post
 
 add_posts_to_locals = (type, posts) ->
-  @roots.config.locals.wordpress[type] = posts
+  if type == "categories"
+    parents = posts.filter (category) ->
+      if category.parent == 0
+        category.childs = []
+        return category
+
+    posts.forEach (category) ->
+      if category.parent != 0
+        parents.forEach (parent) ->
+          if parent.ID == category.parent
+            parent.childs.push category
+
+    @roots.config.locals.wordpress[type] = parents
+  else
+    @roots.config.locals.wordpress[type] = posts

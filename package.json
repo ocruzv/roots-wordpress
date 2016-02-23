@@ -4,7 +4,7 @@
   "description": "Pull wordpress posts into your roots project",
   "main": "lib",
   "dependencies": {
-    "lodash": "3.x",
+    "lodash": "4.x",
     "rest": "1.x",
     "roots-util": "0.1.x",
     "when": "3.x"
@@ -13,11 +13,11 @@
     "chai": "2.x",
     "chai-as-promised": "5.x",
     "chai-fs": "jenius/chai-fs",
-    "coffee-script": "1.9.x",
+    "coffee-script": "latest",
     "coveralls": "2.x",
     "istanbul": "0.3.x",
     "mocha": "2.x",
-    "roots": "3.x"
+    "roots": "4.x"
   },
   "scripts": {
     "test": "./node_modules/.bin/mocha",
