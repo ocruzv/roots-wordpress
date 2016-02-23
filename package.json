@@ -4,7 +4,7 @@
   "description": "Pull wordpress posts into your roots project",
   "main": "lib",
   "dependencies": {
-    "lodash": "4.x",
+    "lodash": "3.x",
     "rest": "1.x",
     "roots-util": "0.1.x",
     "when": "3.x"
