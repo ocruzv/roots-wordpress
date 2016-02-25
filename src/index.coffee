@@ -55,18 +55,27 @@ render_single_views = (config, type, posts) ->
 
   if not config.template then return posts
 
-  W.map posts, (p) =>
+  W.map posts, (p, index) =>
     tpl = path.join(@roots.root, config.template)
-    locals   = _.merge(@roots.config.locals, post: p)
+    locals   = @roots.config.locals.wordpress[type][index]
     output = "#{type}/#{p.slug}.html"
-    compiler = _.find @roots.config.compilers, (c) ->
-      _.contains(c.extensions, path.extname(tpl).substring(1))
 
-    compiler.renderFile(tpl, locals)
+    return {
+      output: output,
+      locals: locals,
+      tpl: tpl
+    }
+
+  .then (post) =>
+    if post && post.tpl
+      compiler = _.find @roots.config.compilers, (c) ->
+        _.contains(c.extensions, path.extname(post.tpl).substring(1))
+
+      compiler.renderFile(tpl, locals)
       .then((res) => @util.write(output, res.result))
-      .yield(output)
-
-  .then (urls) -> posts
+      .then(-> output)
+    else
+      return false
 
 add_urls_to_posts = (obj) ->
   obj.posts.map (post, i) ->
