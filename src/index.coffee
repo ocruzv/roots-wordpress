@@ -3,6 +3,7 @@ W         = require 'when'
 RootsUtil = require 'roots-util'
 _         = require 'lodash'
 path      = require 'path'
+queue     = require 'queue'
 
 module.exports = (opts = {}) ->
   if not opts.site then throw new Error('You must supply a site url or id')
@@ -27,6 +28,8 @@ module.exports = (opts = {}) ->
       W.all(all)
 
 # private
+
+q = queue()
 
 request = (site, type, config) ->
   pathName = "#{site}/posts"
@@ -62,11 +65,16 @@ render_single_views = (config, type, posts) ->
     compiler = _.find @roots.config.compilers, (c) ->
       _.contains(c.extensions, path.extname(tpl).substring(1))
 
-    compiler.renderFile(tpl, locals)
+
+    q.push (cb) =>
+      compiler.renderFile(tpl, locals)
       .then((res) => @util.write(output, res.result))
       .yield(output)
 
-  .then (urls) -> posts
+  .then (urls) =>
+    q.start (cb) =>
+      console.log "end work"
+    posts
 
 add_urls_to_posts = (obj) ->
   obj.posts.map (post, i) ->
