@@ -3,6 +3,7 @@ W         = require 'when'
 RootsUtil = require 'roots-util'
 _         = require 'lodash'
 path      = require 'path'
+async     = require 'async'
 
 module.exports = (opts = {}) ->
   if not opts.site then throw new Error('You must supply a site url or id')
@@ -55,27 +56,43 @@ render_single_views = (config, type, posts) ->
 
   if not config.template then return posts
 
-  W.map posts, (p, index) =>
+  async.each posts (post, callback) ->
     tpl = path.join(@roots.root, config.template)
-    locals   = @roots.config.locals.wordpress[type][index]
-    output = "#{type}/#{p.slug}.html"
+    locals = _.merge(@roots.config.locals, { post: post })
+    output = "#{type}/#{post.slug}.html"
 
-    return {
-      output: output,
-      locals: locals,
-      tpl: tpl
-    }
+    compiler = _.find @roots.config.compilers, (c) ->
+      _.contains(c.extensions, path.extname(tpl).substring(1))
 
-  .then (post) =>
-    if post && post.tpl
-      compiler = _.find @roots.config.compilers, (c) ->
-        _.contains(c.extensions, path.extname(post.tpl).substring(1))
+    callback(null, async.waterfall([
+      (callback) ->
+        callback(null, compiler.renderFile(tpl, locals))
+      (err, res, callback) ->
+        console.log res
+        callback(null, @util.write(output, res.result))
+    ], callback(null, true)))
 
-      compiler.renderFile(tpl, locals)
-      .then((res) => @util.write(output, res.result))
-      .then(-> output)
-    else
-      return false
+  # W.map posts, (p, index) =>
+  #   tpl = path.join(@roots.root, config.template)
+  #   locals   = @roots.config.locals.wordpress[type][index]
+  #   output = "#{type}/#{p.slug}.html"
+  #
+  #   return {
+  #     output: output,
+  #     locals: locals,
+  #     tpl: tpl
+  #   }
+  #
+  # .then (post) =>
+  #   if post && post.tpl
+  #     compiler = _.find @roots.config.compilers, (c) ->
+  #       _.contains(c.extensions, path.extname(post.tpl).substring(1))
+  #
+  #     compiler.renderFile(tpl, locals)
+  #     .then((res) => @util.write(output, res.result))
+  #     .then(-> output)
+  #   else
+  #     return false
 
 add_urls_to_posts = (obj) ->
   obj.posts.map (post, i) ->
