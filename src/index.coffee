@@ -55,7 +55,7 @@ get_posts_and_routes = (type, res) ->
 render_single_views = (config, type, posts) ->
 
   if not config.template then return posts
-  
+
   async.eachSeries posts, (post, callback) =>
     tpl = path.join(@roots.root, config.template)
     locals = @roots.config.locals
@@ -68,28 +68,6 @@ render_single_views = (config, type, posts) ->
     compiler.renderFile(tpl, locals)
       .then((res) => _this.util.write(output, res.result))
       .then(-> callback null)
-
-  # W.map posts, (p, index) =>
-  #   tpl = path.join(@roots.root, config.template)
-  #   locals   = @roots.config.locals.wordpress[type][index]
-  #   output = "#{type}/#{p.slug}.html"
-  #
-  #   return {
-  #     output: output,
-  #     locals: locals,
-  #     tpl: tpl
-  #   }
-  #
-  # .then (post) =>
-  #   if post && post.tpl
-  #     compiler = _.find @roots.config.compilers, (c) ->
-  #       _.contains(c.extensions, path.extname(post.tpl).substring(1))
-  #
-  #     compiler.renderFile(tpl, locals)
-  #     .then((res) => @util.write(output, res.result))
-  #     .then(-> output)
-  #   else
-  #     return false
 
 add_urls_to_posts = (obj) ->
   obj.posts.map (post, i) ->
