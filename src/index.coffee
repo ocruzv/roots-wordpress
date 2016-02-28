@@ -55,22 +55,19 @@ get_posts_and_routes = (type, res) ->
 render_single_views = (config, type, posts) ->
 
   if not config.template then return posts
-
-  async.each posts (post, callback) ->
+  
+  async.eachSeries posts, (post, callback) =>
     tpl = path.join(@roots.root, config.template)
-    locals = _.merge(@roots.config.locals, { post: post })
+    locals = @roots.config.locals
+    locals.post = post
     output = "#{type}/#{post.slug}.html"
 
     compiler = _.find @roots.config.compilers, (c) ->
       _.contains(c.extensions, path.extname(tpl).substring(1))
 
-    callback(null, async.waterfall([
-      (callback) ->
-        callback(null, compiler.renderFile(tpl, locals))
-      (err, res, callback) ->
-        console.log res
-        callback(null, @util.write(output, res.result))
-    ], callback(null, true)))
+    compiler.renderFile(tpl, locals)
+      .then((res) => _this.util.write(output, res.result))
+      .then(-> callback null)
 
   # W.map posts, (p, index) =>
   #   tpl = path.join(@roots.root, config.template)
