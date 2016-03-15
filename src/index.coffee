@@ -12,7 +12,6 @@ module.exports = (opts = {}) ->
   class RootsWordpress
     constructor: (@roots) ->
       @util = new RootsUtil(@roots)
-      opts.site = opts.site.replace(/http:\/\//, '')
 
     setup: ->
       @roots.config.locals ?= {}
@@ -30,21 +29,20 @@ module.exports = (opts = {}) ->
 # private
 
 request = (site, type, config) ->
-  pathName = "#{site}/posts"
-  if type == "categories"
-    pathName = "#{site}/categories"
-  params = _.merge(config, type: type)
-  API(path: pathName, params: params)
+  if !config.route
+    config.route = "posts"
+  pathName = site + config.route
+
+  # params = _.merge(config, type: type)
+  API(path: pathName, params: config.apiParams)
 
 get_posts_and_routes = (type, res) ->
+  posts = res.entity
   if type == "categories"
-    posts = res.entity.categories
     return {
       urls: [],
       posts: posts
     }
-  else
-    posts = res.entity.posts
 
   W.map posts, (p) =>
     output = "/#{type}/#{p.slug}.html"
@@ -75,18 +73,4 @@ add_urls_to_posts = (obj) ->
     post
 
 add_posts_to_locals = (type, posts) ->
-  if type == "categories"
-    parents = posts.filter (category) ->
-      if category.parent == 0
-        category.childs = []
-        return category
-
-    posts.forEach (category) ->
-      if category.parent != 0
-        parents.forEach (parent) ->
-          if parent.ID == category.parent
-            parent.childs.push category
-
-    @roots.config.locals.wordpress[type] = parents
-  else
-    @roots.config.locals.wordpress[type] = posts
+  @roots.config.locals.wordpress[type] = posts
